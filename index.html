@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edytor Dialogów Kogama</title>
+<style>
+body {
+    font-family: sans-serif;
+    margin: 20px;
+}
+h1 {
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+.dialog {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 5px;
+}
+input[type="text"], input[type="number"], textarea {
+    border: 1px solid #ccc;
+    padding: 5px;
+    font-size: 14px;
+}
+input[type="number"] {
+    width: 60px;
+}
+button {
+    padding: 5px 10px;
+    border: 1px solid #000;
+    background: #f0f0f0;
+    cursor: pointer;
+}
+button:hover {
+    background: #e0e0e0;
+}
+.add-btn, .btn {
+    margin-top: 10px;
+    width: 100%;
+}
+textarea {
+    width: 100%;
+    height: 150px;
+    margin-top: 10px;
+    font-family: monospace;
+}
+.empty-state {
+    color: #777;
+    font-size: 14px;
+    margin: 10px 0;
+}
+</style>
+</head>
+<body>
+<h1>Edytor Dialogów</h1>
+
+<div id="dialogList"></div>
+
+<button class="add-btn" onclick="addDialog()">+ Dodaj dialog</button>
+
+<div class="actions">
+    <button class="btn" onclick="generate()">Generuj</button>
+    <button class="btn" onclick="download()">Pobierz</button>
+</div>
+
+<textarea id="output" readonly placeholder="Wygenerowany kod pojawi się tutaj..."></textarea>
+
+<script>
+let dialogs = [];
+
+function addDialog(text = '', duration = '1.5') {
+    dialogs.push({ text, duration });
+    render();
+}
+
+function removeDialog(index) {
+    dialogs.splice(index, 1);
+    render();
+}
+
+function render() {
+    const list = document.getElementById('dialogList');
+    if (dialogs.length === 0) {
+        list.innerHTML = '<div class="empty-state">Brak dialogów. Dodaj pierwszy!</div>';
+        return;
+    }
+    list.innerHTML = dialogs.map((d, i) => `
+        <div class="dialog">
+            <input type="text" placeholder="Tekst dialogu..." value="${d.text}" oninput="dialogs[${i}].text = this.value">
+            <input type="number" value="${d.duration}" step="0.1" oninput="dialogs[${i}].duration = this.value">
+            <button onclick="removeDialog(${i})">✕</button>
+        </div>
+    `).join('');
+}
+
+function generate() {
+    let txt = 'INITIAL_DELAY 0\nDURATION 1.5\nCOLOR 1,0,0\nBILLBOARD true\n---\n';
+    dialogs.forEach(d => {
+        if (!d.text) return;
+        txt += d.text;
+        if (d.duration) txt += ` | duration=${d.duration}`;
+        txt += '\n';
+    });
+    document.getElementById('output').value = txt;
+}
+
+function download() {
+    generate();
+    const txt = document.getElementById('output').value;
+    const blob = new Blob([txt], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'dialogs.txt';
+    a.click();
+}
+
+render();
+</script>
+</body>
+</html>
