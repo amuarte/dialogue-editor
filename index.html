@@ -18,15 +18,16 @@ h1 {
 }
 .dialog {
     display: flex;
-    align-items: center;
     gap: 5px;
     margin-bottom: 5px;
 }
-.dialog input {
-    flex: 1;
+input[type="text"], input[type="number"], textarea {
+    border: 1px solid #ccc;
     padding: 8px;
     font-size: 16px;
-    border: 1px solid #ccc;
+}
+input[type="number"] {
+    width: 70px;
 }
 button {
     padding: 8px 10px;
@@ -55,6 +56,20 @@ textarea {
     margin: 10px 0;
     text-align: center;
 }
+
+/* Mobile-friendly tweaks */
+@media (max-width: 600px) {
+    .dialog {
+        flex-direction: column;
+        gap: 8px;
+    }
+    input[type="number"] {
+        width: 100%;
+    }
+    button {
+        width: 100%;
+    }
+}
 </style>
 </head>
 <body>
@@ -74,8 +89,8 @@ textarea {
 <script>
 let dialogs = [];
 
-function addDialog(text = '') {
-    dialogs.push(text);
+function addDialog(text = '', duration = '1.5') {
+    dialogs.push({ text, duration });
     render();
 }
 
@@ -92,7 +107,8 @@ function render() {
     }
     list.innerHTML = dialogs.map((d, i) => `
         <div class="dialog">
-            <input type="text" placeholder="Tekst dialogu | 1.5" value="${d}" oninput="dialogs[${i}] = this.value">
+            <input type="text" placeholder="Tekst dialogu..." value="${d.text}" oninput="dialogs[${i}].text = this.value">
+            <input type="number" value="${d.duration}" step="0.1" oninput="dialogs[${i}].duration = this.value">
             <button onclick="removeDialog(${i})">✕</button>
         </div>
     `).join('');
@@ -100,8 +116,11 @@ function render() {
 
 function generate() {
     let txt = 'INITIAL_DELAY 0\nDURATION 1.5\nCOLOR 1,0,0\nBILLBOARD true\n---\n';
-    dialogs.forEach(line => {
-        if (line.trim()) txt += line.trim() + '\n';
+    dialogs.forEach(d => {
+        if (!d.text) return;
+        txt += d.text;
+        if (d.duration) txt += ` | duration=${d.duration}`;
+        txt += '\n';
     });
     document.getElementById('output').value = txt;
 }
