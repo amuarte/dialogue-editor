@@ -3,139 +3,190 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Edytor Dialogów Kogama</title>
+<title>Edytor Dialogów</title>
 <style>
 body {
     font-family: sans-serif;
-    margin: 10px;
-    max-width: 700px;
+    margin: 15px;
+    max-width: 600px;
     margin-inline: auto;
 }
 h1 {
-    font-size: 20px;
-    margin-bottom: 10px;
+    font-size: 18px;
     text-align: center;
+    margin-bottom: 15px;
+}
+input, button, textarea {
+    font-size: 14px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+button {
+    background: #f0f0f0;
+    cursor: pointer;
+    border: 1px solid #999;
+}
+button:hover {
+    background: #e0e0e0;
 }
 .dialog {
     display: flex;
-    gap: 5px;
-    margin-bottom: 5px;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
 }
-input[type="text"], input[type="number"], textarea {
-    border: 1px solid #ccc;
-    padding: 8px;
-    font-size: 16px;
+input[type="text"] {
+    flex: 1;
 }
 input[type="number"] {
-    width: 70px;
+    width: 60px;
 }
-button {
-    padding: 8px 10px;
-    border: 1px solid #000;
-    background: #f0f0f0;
+button.rm {
+    width: 30px;
+    padding: 6px;
+}
+.controls {
+    display: flex;
+    gap: 8px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+}
+.controls button {
+    flex: 1;
+    min-width: 100px;
+}
+.color-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+input[type="color"] {
+    width: 50px;
+    height: 35px;
     cursor: pointer;
-    font-size: 16px;
-}
-button:active {
-    background: #ddd;
-}
-.add-btn, .btn {
-    margin-top: 10px;
-    width: 100%;
 }
 textarea {
     width: 100%;
-    height: 160px;
-    margin-top: 10px;
+    height: 120px;
     font-family: monospace;
-    font-size: 14px;
+    font-size: 13px;
+    margin-top: 10px;
 }
-.empty-state {
-    color: #777;
-    font-size: 15px;
-    margin: 10px 0;
+.preview {
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-top: 10px;
+    border-radius: 3px;
+    display: none;
+}
+.preview.active {
+    display: block;
+}
+.preview-box {
+    background: rgba(0,0,0,0.85);
+    padding: 15px;
+    border-radius: 3px;
+    font-size: 16px;
     text-align: center;
-}
-
-/* Mobile-friendly tweaks */
-@media (max-width: 600px) {
-    .dialog {
-        flex-direction: column;
-        gap: 8px;
-    }
-    input[type="number"] {
-        width: 100%;
-    }
-    button {
-        width: 100%;
-    }
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 </style>
 </head>
 <body>
 <h1>Edytor Dialogów</h1>
 
-<div id="dialogList"></div>
+<div id="list"></div>
 
-<button class="add-btn" onclick="addDialog()">+ Dodaj dialog</button>
+<button onclick="add()" style="width: 100%; margin-bottom: 10px;">+ Dodaj</button>
 
-<div class="actions">
-    <button class="btn" onclick="generate()">Generuj</button>
-    <button class="btn" onclick="download()">Pobierz</button>
+<div class="color-row">
+    <label>Kolor:</label>
+    <input type="color" id="color" value="#ff0000">
 </div>
 
-<textarea id="output" readonly placeholder="Wygenerowany kod pojawi się tutaj..."></textarea>
+<div class="controls">
+    <button onclick="gen()">Generuj</button>
+    <button onclick="test()">Testuj</button>
+    <button onclick="dl()">Pobierz</button>
+</div>
+
+<div id="preview" class="preview">
+    <div id="box" class="preview-box"></div>
+</div>
+
+<textarea id="out" readonly></textarea>
 
 <script>
-let dialogs = [];
+let d = [];
+let i = 0;
 
-function addDialog(text = '', duration = '1.5') {
-    dialogs.push({ text, duration });
-    render();
+function add() {
+    d.push({ t: 'Nowy dialog', dur: 1.5 });
+    show();
 }
 
-function removeDialog(index) {
-    dialogs.splice(index, 1);
-    render();
+function rm(x) {
+    d.splice(x, 1);
+    show();
 }
 
-function render() {
-    const list = document.getElementById('dialogList');
-    if (dialogs.length === 0) {
-        list.innerHTML = '<div class="empty-state">Brak dialogów. Dodaj pierwszy!</div>';
-        return;
-    }
-    list.innerHTML = dialogs.map((d, i) => `
+function show() {
+    document.getElementById('list').innerHTML = d.map((v, x) => `
         <div class="dialog">
-            <input type="text" placeholder="Tekst dialogu..." value="${d.text}" oninput="dialogs[${i}].text = this.value">
-            <input type="number" value="${d.duration}" step="0.1" oninput="dialogs[${i}].duration = this.value">
-            <button onclick="removeDialog(${i})">✕</button>
+            <input type="text" value="${v.t}" onchange="d[${x}].t=this.value">
+            <input type="number" value="${v.dur}" step="0.1" onchange="d[${x}].dur=+this.value">
+            <button class="rm" onclick="rm(${x})">✕</button>
         </div>
     `).join('');
 }
 
-function generate() {
-    let txt = 'INITIAL_DELAY 0\nDURATION 1.5\nCOLOR 1,0,0\nBILLBOARD true\n---\n';
-    dialogs.forEach(d => {
-        if (!d.text) return;
-        txt += d.text;
-        if (d.duration) txt += ` | duration=${d.duration}`;
-        txt += '\n';
+function gen() {
+    let c = document.getElementById('color').value;
+    let r = parseInt(c.substr(1,2), 16) / 255;
+    let g = parseInt(c.substr(3,2), 16) / 255;
+    let b = parseInt(c.substr(5,2), 16) / 255;
+    let t = `INITIAL_DELAY 0\nDURATION 1.5\nCOLOR ${r.toFixed(2)},${g.toFixed(2)},${b.toFixed(2)}\nBILLBOARD true\n---\n`;
+    d.forEach(v => {
+        t += v.t + ` | duration=${v.dur}\n`;
     });
-    document.getElementById('output').value = txt;
+    document.getElementById('out').value = t;
 }
 
-function download() {
-    generate();
-    const txt = document.getElementById('output').value;
-    const blob = new Blob([txt], { type: 'text/plain' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
+function test() {
+    if (!d.length) return alert('Dodaj dialog!');
+    i = 0;
+    document.getElementById('preview').classList.add('active');
+    nx();
+}
+
+function nx() {
+    if (i >= d.length) {
+        document.getElementById('preview').classList.remove('active');
+        return;
+    }
+    let v = d[i];
+    let b = document.getElementById('box');
+    b.textContent = v.t;
+    b.style.color = document.getElementById('color').value;
+    i++;
+    setTimeout(nx, v.dur * 1000);
+}
+
+function dl() {
+    gen();
+    let a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([document.getElementById('out').value], {type: 'text/plain'}));
     a.download = 'dialogs.txt';
     a.click();
 }
 
-render();
+show();
 </script>
 </body>
 </html>
